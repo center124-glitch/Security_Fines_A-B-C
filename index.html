@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <!--
   ============================================================
-  SBK Fines v4 — ระบบบันทึกสรุปยอดปรับและชดใช้ค่าเสียหาย
+  SBK Fines v5 — ระบบบันทึกสรุปยอดปรับและชดใช้ค่าเสียหาย
   แผนกรักษาความปลอดภัย ศูนย์การค้า Seacon Bangkae
   Single-file HTML SPA  |  Backend: Code_Fines_v2.gs (Google Apps Script + Google Drive/Sheets)
   หมวด A ปรับบัตรสูญหาย | หมวด B ปรับผู้รับเหมาทำผิดระเบียบ | หมวด C ยินยอมชดใช้ค่าเสียหาย
 
+  v5: ลดขนาดตัวอักษรหมวด A/B/C บนก้อนตั๋วลง 35%
   v4: ตัดช่องลงชื่อท้ายรายงานออก
   v3: ย้ายปุ่ม "บันทึกรายการใหม่" ไปไว้แถบเครื่องมือหน้าแดชบอร์ด (+ หมวด A/B/C) และหัวหน้าหมวด → เปิดฟอร์มเป็นหน้าต่างป๊อปอัป
       หัวหมวดแบบใหม่ (ตัวอักษรหมวด + สถิติ 4 ช่อง), Header โทนสีอ่อนมีลูกเล่น (สว่าง/มืด), การ์ดแดชบอร์ดเป็นรูปตั๋วเจาะรู
@@ -770,6 +771,60 @@ button.tkt:focus-visible{outline:3px solid #fff;outline-offset:-5px}
 .ct-tile .tv{text-shadow:0 2px 10px rgba(0,0,0,.18)}
 .ct-bar{background:rgba(255,255,255,.28)}.ct-bar i{background:#fff;box-shadow:0 0 10px rgba(255,255,255,.7)}
 @media (prefers-reduced-motion:reduce){.ct-tile::after{animation:none!important}}
+
+/* ===== v4.1: ปุ่มส่งออกรายงานมีสี + แดชบอร์ดสีสันขึ้น ===== */
+#btnPdf,#btnJpg,#btnXls,#btnPrint{position:relative;overflow:hidden;color:#fff;border:0;transition:transform .15s,filter .15s,box-shadow .15s}
+#btnPdf{background:linear-gradient(135deg,#fb7185,#e11d48);box-shadow:0 10px 18px -10px #e11d48}
+#btnJpg{background:linear-gradient(135deg,#a78bfa,#6d28d9);box-shadow:0 10px 18px -10px #6d28d9}
+#btnXls{background:linear-gradient(135deg,#34d399,#15803d);box-shadow:0 10px 18px -10px #15803d}
+#btnPrint{background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#3730a3;box-shadow:0 10px 18px -12px #4f46e5}
+html[data-theme=dark] #btnPrint{background:linear-gradient(135deg,#3b3f86,#2e3270);color:#e0e7ff}
+#btnPdf svg,#btnJpg svg,#btnXls svg,#btnPrint svg{box-sizing:content-box;width:17px;height:17px;padding:3px;border-radius:8px;background:rgba(255,255,255,.24)}
+#btnPrint svg{background:rgba(79,70,229,.14)}
+#btnPdf::after,#btnJpg::after,#btnXls::after,#btnPrint::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.45) 50%,transparent 62%);transform:translateX(-130%);transition:transform .6s;pointer-events:none}
+#btnPdf:hover,#btnJpg:hover,#btnXls:hover,#btnPrint:hover{transform:translateY(-2px);filter:brightness(1.06)}
+#btnPdf:hover::after,#btnJpg:hover::after,#btnXls:hover::after,#btnPrint:hover::after{transform:translateX(130%)}
+#btnPdf:active,#btnJpg:active,#btnXls:active,#btnPrint:active{transform:translateY(0)}
+
+/* การ์ดกราฟ/รายการในแดชบอร์ด: แถบสีด้านบน + ไอคอนไล่สี + พื้นหลังโทนสีของการ์ด */
+.card.acc1{--cc:#6366f1;--cc2:#a78bfa}.card.acc2{--cc:#0d9488;--cc2:#34d399}.card.acc3{--cc:#f59e0b;--cc2:#fb7185}.card.acc4{--cc:#db2777;--cc2:#8b5cf6}.card.acc5{--cc:#0284c7;--cc2:#6366f1}
+#page-dash .card{position:relative;overflow:hidden;border-radius:22px;border:1px solid color-mix(in srgb,var(--cc,#6366f1) 20%,var(--line));
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cc,#6366f1) 9%,var(--card)),var(--card) 150px);
+  box-shadow:0 14px 28px -18px color-mix(in srgb,var(--cc,#6366f1) 55%,transparent);animation:rise .6s cubic-bezier(.2,.9,.25,1) both;transition:transform .2s,box-shadow .2s}
+#page-dash .card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--cc,#6366f1),var(--cc2,#a78bfa),var(--cc,#6366f1));background-size:200% 100%;animation:flow 8s linear infinite}
+#page-dash .card:hover{transform:translateY(-3px);box-shadow:0 22px 36px -20px color-mix(in srgb,var(--cc,#6366f1) 65%,transparent)}
+#page-dash .grid>.card:nth-child(2){animation-delay:.08s}
+#page-dash>.card{animation-delay:.16s}
+.hic{display:inline-grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;color:#fff;background:linear-gradient(135deg,var(--cc2,#a78bfa),var(--cc,#6366f1));box-shadow:0 8px 16px -8px var(--cc,#6366f1)}
+.hic svg{width:20px;height:20px}
+#page-dash .card h2 .sub{padding:2px 12px;border-radius:99px;background:color-mix(in srgb,var(--cc,#6366f1) 13%,transparent);color:color-mix(in srgb,var(--cc,#6366f1) 65%,var(--ink));font-weight:500;font-size:13.5px}
+#page-dash .cwrap{padding:8px;border-radius:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--cc,#6366f1) 6%,transparent),transparent 70%)}
+/* ตารางรายการล่าสุด */
+#recentBox .tbl th{background:linear-gradient(90deg,color-mix(in srgb,#6366f1 14%,var(--card)),color-mix(in srgb,#ec4899 12%,var(--card)),color-mix(in srgb,#f59e0b 14%,var(--card)));color:var(--ink);border-bottom:2px solid color-mix(in srgb,#6366f1 28%,var(--card))}
+#recentBox .tbl tbody tr{border-left-width:5px;border-left-style:solid;transition:transform .15s}
+#recentBox .tbl tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--ink) 3%,transparent)}
+#recentBox .tbl tbody tr:hover td{background:color-mix(in srgb,#6366f1 10%,var(--card))}
+#recentBox .tbl tbody tr:hover{transform:translateX(3px)}
+#recentBox .tag.cA{background:linear-gradient(135deg,#818cf8,#4f46e5);color:#fff}
+#recentBox .tag.cB{background:linear-gradient(135deg,#fbbf24,#ea580c);color:#fff}
+#recentBox .tag.cC{background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff}
+#recentBox .tag{font-weight:600;box-shadow:0 4px 10px -6px rgba(27,34,64,.45)}
+#recentBox td.amt{color:color-mix(in srgb,#4f46e5 70%,var(--ink))}
+@media (prefers-reduced-motion:reduce){#page-dash .card,#page-dash .card::before{animation:none!important}}
+
+/* แถบรายงาน: กระชับให้อยู่แถวเดียวบนจอกว้าง */
+@media (min-width:1100px){
+  #page-rep .toolbar{gap:10px;flex-wrap:nowrap}
+  #page-rep .seg{padding:3px}#page-rep .seg button{padding:7px 11px;font-size:14px}
+  #page-rep .period-nav{padding:3px;gap:4px}#page-rep .period-nav button{width:32px;height:32px}#page-rep .period-nav input{min-width:116px;font-size:14px}
+  #btnPdf,#btnJpg,#btnXls,#btnPrint{padding:6px 11px;min-height:38px;font-size:13.5px;gap:6px}
+}
+
+/* ตัวอักษรหมวด A/B/C บนก้อนตั๋ว: ลดลง 35% (46px → ~30px) */
+.tk-stub b.lt.ltc{font-size:clamp(23px,1.95vw,30px)}
+
+/* v5: ตัวอักษรหมวด A/B/C บนก้อนตั๋วเล็กลง 35% (เดิม clamp(36px,3vw,46px) → ×0.65) */
+.tkt:not(.T) .tk-stub b.lt{font-size:clamp(23.4px,1.95vw,29.9px);line-height:1.1}
 </style>
 </head>
 <body class="theme-T on-dash">
@@ -873,7 +928,7 @@ button.tkt:focus-visible{outline:3px solid #fff;outline-offset:-5px}
         <button class="nav" data-go="B" type="button"><svg class="i"><use href="#i-hat"/></svg><span>หมวด B <small class="hide-m">ผู้รับเหมา</small></span><i class="dot"></i></button>
         <button class="nav" data-go="C" type="button"><svg class="i"><use href="#i-hand"/></svg><span>หมวด C <small class="hide-m">ชดใช้</small></span><i class="dot"></i></button>
         <button class="nav" data-go="report" type="button"><svg class="i"><use href="#i-report"/></svg><span>รายงาน</span></button>
-        <span class="tabfoot">เวอร์ชัน <span id="verTxt">v4</span> • <span id="recCount">—</span></span>
+        <span class="tabfoot">เวอร์ชัน <span id="verTxt">v5</span> • <span id="recCount">—</span></span>
       </nav>
     </header>
 
@@ -911,15 +966,15 @@ button.tkt:focus-visible{outline:3px solid #fff;outline-offset:-5px}
         </div>
 
         <div class="grid g21" style="margin-bottom:16px">
-          <div class="card"><h2>เปรียบเทียบยอดเงินปรับแต่ละหมวด <span class="sub" id="cmpSub"></span></h2><div class="cwrap"><canvas id="chCmp"></canvas></div></div>
-          <div class="card"><h2>ช่องทางชำระเงิน <span class="sub" id="paySub"></span></h2><div class="cwrap"><canvas id="chPay"></canvas></div></div>
+          <div class="card acc1"><h2><span class="hic"><svg class="i"><use href="#i-dash"/></svg></span>เปรียบเทียบยอดเงินปรับแต่ละหมวด <span class="sub" id="cmpSub"></span></h2><div class="cwrap"><canvas id="chCmp"></canvas></div></div>
+          <div class="card acc2"><h2><span class="hic"><svg class="i"><use href="#i-wallet"/></svg></span>ช่องทางชำระเงิน <span class="sub" id="paySub"></span></h2><div class="cwrap"><canvas id="chPay"></canvas></div></div>
         </div>
         <div class="grid g2" style="margin-bottom:16px">
-          <div class="card"><h2>แนวโน้มรายเดือน <span class="sub" id="trendSub"></span></h2><div class="cwrap tall"><canvas id="chTrend"></canvas></div></div>
-          <div class="card"><h2>เปรียบเทียบรายปี <span class="sub">ยอดเงินแยกหมวด</span></h2><div class="cwrap tall"><canvas id="chYoY"></canvas></div></div>
+          <div class="card acc3"><h2><span class="hic"><svg class="i"><use href="#i-report"/></svg></span>แนวโน้มรายเดือน <span class="sub" id="trendSub"></span></h2><div class="cwrap tall"><canvas id="chTrend"></canvas></div></div>
+          <div class="card acc4"><h2><span class="hic"><svg class="i"><use href="#i-today"/></svg></span>เปรียบเทียบรายปี <span class="sub">ยอดเงินแยกหมวด</span></h2><div class="cwrap tall"><canvas id="chYoY"></canvas></div></div>
         </div>
-        <div class="card">
-          <h2>รายการล่าสุด <span class="sub">10 รายการล่าสุดจากทุกหมวด (แตะแถวเพื่อแก้ไข)</span></h2>
+        <div class="card acc5">
+          <h2><span class="hic"><svg class="i"><use href="#i-card"/></svg></span>รายการล่าสุด <span class="sub">10 รายการล่าสุดจากทุกหมวด (แตะแถวเพื่อแก้ไข)</span></h2>
           <div id="recentBox"></div>
         </div>
       </section>
@@ -982,7 +1037,7 @@ button.tkt:focus-visible{outline:3px solid #fff;outline-offset:-5px}
 
 /* ============ 1) CONFIG ============ */
 const CONFIG = {
-  APP_VER: 'v4',
+  APP_VER: 'v5',
   GAS_URL: 'https://script.google.com/macros/s/AKfycbx9u9NfNu0TOFqegM0GKdR_F_ylbqyJnna5kDhk9PFUCoOpCVhDMihOK7OjaBGe31Jr/exec',   // Web App ของ Apps Script (ค่าในปุ่ม ⚙ ตั้งค่าของเครื่องนั้นๆ สำคัญกว่า)
   SPLASH_MS: 3500,                // Auto-Enter หลังเปิดแอป (2–4 วินาทีตามสเปก)
   IDLE_MS: 3 * 60 * 1000,         // ล็อกหน้าจอเมื่อไม่มีการใช้งาน 3 นาที (สเปกกำหนด 3–5 นาที)
@@ -1695,7 +1750,7 @@ function renderDash() {
   const tk = (i, cls, tag, attrs, ic, title, num, unit, sub, cap, big, cntHtml, pl) => '<div class="kw" style="--i:' + i + '"><' + tag + ' class="tkt ' + cls + '"' + attrs + '>' +
     '<div class="tk-main"><div class="tk-top"><span class="tk-ic"><svg class="i"><use href="#i-' + ic + '"/></svg></span><span class="k">' + title + '</span></div>' +
     '<div class="v">' + cn(num) + '<small>' + unit + '</small></div><div class="s">' + sub + '</div>' + pl + '</div>' +
-    '<i class="tk-perf"></i><div class="tk-stub"><span class="cap">' + cap + '</span><b class="lt">' + big + '</b><b class="cn">' + cntHtml + '</b><span class="un">รายการ</span><i class="bars"></i></div></' + tag + '></div>';
+    '<i class="tk-perf"></i><div class="tk-stub"><span class="cap">' + cap + '</span><b class="lt' + (cap === 'CATEGORY' ? ' ltc' : '') + '">' + big + '</b><b class="cn">' + cntHtml + '</b><span class="un">รายการ</span><i class="bars"></i></div></' + tag + '></div>';
   const kp = (c, i) => { const pc = sm.total.sum ? Math.round(sm[c].sum * 100 / sm.total.sum) : 0;
     return tk(i, c, 'button', ' type="button" data-go="' + c + '" title="ไปที่' + esc(CATS[c].full) + '"', CATS[c].icon.slice(2), esc(CATS[c].full), sm[c].sum, 'บาท', 'สัดส่วน ' + pc + '% ของยอดรวม', 'CATEGORY', c, cn(sm[c].n), pills(smCash[c].sum, smTr[c].sum)); };
   $('#kpis').innerHTML = kp('A', 0) + kp('B', 1) + kp('C', 2) +
