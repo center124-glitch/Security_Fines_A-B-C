@@ -4,10 +4,21 @@
 <meta charset="UTF-8">
 <!--
   ============================================================
-  SBK Fines v5 — ระบบบันทึกสรุปยอดปรับและชดใช้ค่าเสียหาย
+  SBK Fines v6 — ระบบบันทึกสรุปยอดปรับและชดใช้ค่าเสียหาย
   แผนกรักษาความปลอดภัย ศูนย์การค้า Seacon Bangkae
-  Single-file HTML SPA  |  Backend: Code_Fines_v2.gs (Google Apps Script + Google Drive/Sheets)
+  Single-file HTML SPA  |  Backend: Code_Fines_v3.gs (Google Apps Script + Google Drive/Sheets)
   หมวด A ปรับบัตรสูญหาย | หมวด B ปรับผู้รับเหมาทำผิดระเบียบ | หมวด C ยินยอมชดใช้ค่าเสียหาย
+
+  v6 (ตรวจทานความแม่นยำ + รายงานทางการ):
+      • ยืนยันผลบันทึก/ลบจากเซิร์ฟเวอร์จริง (ใบตอบรับ Code_Fines_v3) — แจ้งเลขเอกสารซ้ำ/รหัสผิดได้ทันที
+        และการ "แก้ไข" ตรวจว่าค่าใหม่ขึ้นชีตจริง (เดิมยืนยันผ่านทันทีแม้ชีตยังเป็นค่าเก่า)
+      • ระหว่างรอซิงก์ รายการที่แก้ไขไม่เด้งกลับเป็นค่าเก่า และกันผลโหลดเก่ามาทับผลโหลดใหม่
+      • เลขประจำตัว 12 หลักที่เลข 0 หน้าหาย เติมคืนอัตโนมัติเมื่อผ่าน checksum • ตรวจ checksum เลข 13 หลักตอนบันทึก
+      • วิธีชำระเงินที่สะกดต่างกันรวมเป็น เงินสด/โอน • เตือนเลขเอกสารที่จำนวนหลักผิดปกติ
+      • หน้า ⚙ ตั้งค่า มี "ตรวจคุณภาพข้อมูล" แสดงรายการที่ควรแก้ในชีตต้นฉบับ
+      • รายงาน: บทสรุปภาพรวม + จำนวนเงินตัวอักษร + เทียบช่วงก่อนหน้า, ตารางสรุปแยกหมวด/ช่องทางชำระ,
+        ลำดับในรายงานเริ่ม 1 ทุกช่วง, ท้ายตารางแยกเงินสด/โอน, ระบุแหล่งข้อมูลและเวลาข้อมูล, สเกลกราฟเป็นเลขกลม
+      • Excel: วันที่เป็นเลขวันที่จริง (ไม่เลื่อนตามเขตเวลา) + แถวสรุปเงินสด/โอน
 
   v5: ลดขนาดตัวอักษรหมวด A/B/C บนก้อนตั๋วลง 35%
   v4: ตัดช่องลงชื่อท้ายรายงานออก
@@ -18,7 +29,7 @@
       ฝัง Web App URL ไว้ในโค้ดแล้ว (CONFIG.GAS_URL) และเพิ่มปุ่มซ่อน/แสดงเมนูด้านข้าง
 
   วิธีเริ่มใช้งาน
-  1) วางโค้ด Code_Fines_v2.gs ใน Apps Script เดิม → Run authorizeAndTest → Deploy เป็น New version
+  1) วางโค้ด Code_Fines_v3.gs ใน Apps Script เดิม → Run authorizeAndTest → Deploy เป็น New version (URL เดิมใช้ต่อได้)
   2) เปิดไฟล์นี้ได้ทันที (ใช้ URL ที่ฝังไว้) — ถ้าต้องใช้ URL อื่นให้กดปุ่ม ⚙ ตั้งค่า
   3) ปีใหม่: เพิ่มไฟล์ "สรุปยอดปรับหมวด A -B-C ... ปี. 2027" ในโฟลเดอร์เดิม ระบบเห็นเอง ไม่ต้องแก้โค้ด
   ============================================================
@@ -516,6 +527,21 @@ table.tbl{width:100%;border-collapse:collapse;font-size:15px;min-width:980px;bac
 .a4 h4{font:600 14.5px 'Prompt';margin:0 0 6px;color:#1b2240}
 .a4 .box{border:1px solid #e4e8f6;border-radius:12px;padding:10px 12px}
 .a4 .pbar{display:flex;height:16px;border-radius:99px;overflow:hidden;background:#eef0ff;margin:6px 0}
+/* v6: รายงานทางการ — บทสรุปภาพรวม / ตารางสรุป / แถวรวมย่อย */
+.a4 .kp div .dl{display:inline-block;margin-top:2px;padding:1px 8px;border-radius:99px;background:rgba(255,255,255,.2);font-size:11.5px;opacity:1}
+.a4 .exs{border:1px solid #d9def2;border-left:5px solid #1b2240;border-radius:10px;padding:7px 14px;margin-bottom:10px;background:#f7f8fd;font-size:13.6px;line-height:1.65;text-align:justify}
+.a4 .exs b{font-weight:700}
+.a4 .exs .h{font:600 13.5px 'Prompt';color:#1b2240;margin-right:6px}
+.a4 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.04fr);gap:14px;margin-bottom:10px}
+.a4 .grid2b{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px}
+.a4 table.sm td,.a4 table.sm th{padding:3px 6px;font-size:12.3px;white-space:nowrap;line-height:1.5}
+.a4 table.sm td.wrap{white-space:normal}
+.a4 .kp{margin-bottom:10px}.a4.sum .rb{padding-top:12px;padding-bottom:4px}.a4 .kp div{padding:9px 14px}
+.a4 table.sm tr.tt td{background:#eef0ff;font-weight:700;color:#1b2240}
+.a4 .dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:0}
+.a4 tr.sub td{background:#fafbff;color:#47507a;font:600 12.5px 'Prompt'}
+.a4 .bt{font:400 12px 'Sarabun';color:inherit;opacity:.85}
+.a4 .note{font-size:11px;line-height:1.4;color:#7a82a6;margin-top:3px}
 .rep-info{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 #stage{position:absolute;left:-12000px;top:0;display:flex;flex-direction:column;gap:20px;pointer-events:none}
 #printArea{display:none}
@@ -928,7 +954,7 @@ html[data-theme=dark] #btnPrint{background:linear-gradient(135deg,#3b3f86,#2e327
         <button class="nav" data-go="B" type="button"><svg class="i"><use href="#i-hat"/></svg><span>หมวด B <small class="hide-m">ผู้รับเหมา</small></span><i class="dot"></i></button>
         <button class="nav" data-go="C" type="button"><svg class="i"><use href="#i-hand"/></svg><span>หมวด C <small class="hide-m">ชดใช้</small></span><i class="dot"></i></button>
         <button class="nav" data-go="report" type="button"><svg class="i"><use href="#i-report"/></svg><span>รายงาน</span></button>
-        <span class="tabfoot">เวอร์ชัน <span id="verTxt">v5</span> • <span id="recCount">—</span></span>
+        <span class="tabfoot">เวอร์ชัน <span id="verTxt">v6</span> • <span id="recCount">—</span></span>
       </nav>
     </header>
 
@@ -1028,7 +1054,7 @@ html[data-theme=dark] #btnPrint{background:linear-gradient(135deg,#3b3f86,#2e327
 
 <script>
 /* =====================================================================
-   SBK Fines v1 — JavaScript
+   SBK Fines v6 — JavaScript
    โครงสร้าง: 1) CONFIG/SEED  2) PURE (ทดสอบได้)  3) Storage/State  4) UI helper
               5) Cloud API   6) หมวด A/B/C  7) Dashboard  8) รายงาน/Export
               9) Settings/PWA  10) Splash/Idle lock  11) init
@@ -1037,7 +1063,9 @@ html[data-theme=dark] #btnPrint{background:linear-gradient(135deg,#3b3f86,#2e327
 
 /* ============ 1) CONFIG ============ */
 const CONFIG = {
-  APP_VER: 'v5',
+  APP_VER: 'v6',
+  API_VER_MIN: 3,                 // Code_Fines_v3.gs ขึ้นไปจึงมีใบตอบรับผลบันทึก (รุ่นเก่ายังใช้ได้แต่ยืนยันผลแบบเดิม)
+  RECEIPT_TRIES: 12,              // ถามผลบันทึกจากเซิร์ฟเวอร์สูงสุด ~12 ครั้ง (รวม ~30 วินาที)
   GAS_URL: 'https://script.google.com/macros/s/AKfycbx9u9NfNu0TOFqegM0GKdR_F_ylbqyJnna5kDhk9PFUCoOpCVhDMihOK7OjaBGe31Jr/exec',   // Web App ของ Apps Script (ค่าในปุ่ม ⚙ ตั้งค่าของเครื่องนั้นๆ สำคัญกว่า)
   SPLASH_MS: 3500,                // Auto-Enter หลังเปิดแอป (2–4 วินาทีตามสเปก)
   IDLE_MS: 3 * 60 * 1000,         // ล็อกหน้าจอเมื่อไม่มีการใช้งาน 3 นาที (สเปกกำหนด 3–5 นาที)
@@ -1106,7 +1134,9 @@ function periodLabel(period, refIso) {
   if (!r) return 'ข้อมูลทั้งหมดทุกปี';
   if (period === 'day') return fmtThaiDate(refIso, true);
   if (period === 'week') { const a = parseIso(r[0]), b = parseIso(r[1]);
-    return a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + TH_MONTHS_S[a.getMonth()] : '') + ' – ' + b.getDate() + ' ' + TH_MONTHS_S[b.getMonth()] + ' ' + be(b.getFullYear()); }
+    /* สัปดาห์คร่อมปี (เช่น 29 ธ.ค. – 4 ม.ค.) ต้องระบุปีของวันแรกด้วย ไม่งั้นอ่านเป็นปีเดียวกัน */
+    const crossY = a.getFullYear() !== b.getFullYear();
+    return a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + TH_MONTHS_S[a.getMonth()] : '') + (crossY ? ' ' + be(a.getFullYear()) : '') + ' – ' + b.getDate() + ' ' + TH_MONTHS_S[b.getMonth()] + ' ' + be(b.getFullYear()); }
   if (period === 'month') return TH_MONTHS[ref.getMonth()] + ' ' + be(ref.getFullYear());
   return 'ปี ' + be(ref.getFullYear());
 }
@@ -1119,6 +1149,96 @@ function shiftRef(period, refIso, dir) {
   return refIso;
 }
 const inRange = (iso, r) => !r || (iso >= r[0] && iso <= r[1]);
+/* ช่วงก่อนหน้าที่ยาวเท่ากัน (ใช้เทียบในรายงาน): วัน→เมื่อวาน, สัปดาห์→สัปดาห์ก่อน, เดือน→เดือนก่อน, ปี→ปีก่อน */
+function prevRange(period, refIso) { return period === 'all' ? null : rangeFor(period, shiftRef(period, refIso, -1)); }
+const PREV_NAME = { day: 'วันก่อนหน้า', week: 'สัปดาห์ก่อนหน้า', month: 'เดือนก่อนหน้า', year: 'ปีก่อนหน้า' };
+/* ช่วงสำหรับเปรียบเทียบที่ "ยุติธรรม": ถ้าช่วงปัจจุบันยังไม่จบ (เช่น ปี 2569 ถึงวันนี้ 17 ต.ค.)
+   ต้องเทียบกับช่วงเดียวกันของงวดก่อน (1 ม.ค.–17 ต.ค. 2568) ไม่ใช่ทั้งปี 2568 — มิฉะนั้นยอดจะดู "ลดลง" เกินจริง
+   คืน { range, partial, label } หรือ null (ช่วง 'all') */
+function compareRange(period, refIso, today) {
+  const cur = rangeFor(period, refIso), prev = prevRange(period, refIso); if (!cur || !prev) return null;
+  const lbl = periodLabel(period, shiftRef(period, refIso, -1));
+  if (period === 'day' || !(today >= cur[0] && today < cur[1])) return { range: prev, partial: false, label: lbl };
+  const t = parseIso(today), ps = parseIso(prev[0]); let pe;
+  if (period === 'week') pe = addDays(ps, Math.round((t - parseIso(cur[0])) / 864e5));
+  else {                                                       // เดือน/ปี: วันที่เดียวกันของงวดก่อน (ตัดที่สิ้นเดือน เช่น 31 → 30)
+    const y = period === 'year' ? t.getFullYear() - 1 : ps.getFullYear(), m = period === 'year' ? t.getMonth() : ps.getMonth();
+    pe = new Date(y, m, Math.min(t.getDate(), new Date(y, m + 1, 0).getDate()));
+  }
+  const e = isoOf(pe) > prev[1] ? prev[1] : isoOf(pe);
+  return { range: [prev[0], e], partial: true, label: fmtThaiShort(prev[0]) + ' – ' + fmtThaiShort(e) };
+}
+/* % เปลี่ยนแปลง: ฐานเป็น 0 → คืน null (แสดง "–" แทน Infinity) */
+const pctChange = (now, prev) => (prev ? (now - prev) * 100 / prev : null);
+
+/* ---- เลขประจำตัว 13 หลัก (บุคคล/นิติบุคคล) ---- */
+function thaiIdOk(d) {
+  if (!/^\d{13}$/.test(d)) return false;
+  let t = 0; for (let i = 0; i < 12; i++) t += +d[i] * (13 - i);
+  return (11 - t % 11) % 10 === +d[12];
+}
+/* เลข 12 หลักที่เติม 0 ข้างหน้าแล้วผ่าน checksum = เลขนิติบุคคล 0xxx ที่ Excel ตัด 0 ทิ้ง → เติมคืน (ไม่ผ่าน = ไม่แก้ ไม่เดา) */
+function fixIdCard(s) {
+  s = String(s == null ? '' : s).trim();
+  if (/^[-–—\s]*$/.test(s)) return '';
+  return /^\d{12}$/.test(s) && thaiIdOk('0' + s) ? '0' + s : s;
+}
+/* วิธีชำระเงินสะกดต่างกัน → 'เงินสด' | 'โอน' (คำที่ไม่รู้จักคงไว้ จะไปอยู่ในกลุ่ม "อื่นๆ" ของรายงาน) */
+function normPay(v) {
+  const t = String(v == null ? '' : v).trim(); if (!t) return '';
+  if (/โอน|qr|คิวอาร์|พร้อมเพย์|promptpay|transfer|บัญชี|mobile|แอป/i.test(t)) return 'โอน';
+  if (/สด|cash/i.test(t)) return 'เงินสด';
+  return t;
+}
+/* จำนวนเงินเป็นตัวอักษรไทย (แบบ BAHTTEXT ของ Excel) เช่น 61400 → "หกหมื่นหนึ่งพันสี่ร้อยบาทถ้วน" */
+function bahtText(n) {
+  n = Math.round((Number(n) || 0) * 100) / 100;
+  if (n === 0) return 'ศูนย์บาทถ้วน';
+  const neg = n < 0; n = Math.abs(n);
+  const D = ['', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'], P = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน'];
+  const six = s => { let o = ''; const L = s.length;
+    for (let i = 0; i < L; i++) { const d = +s[i], p = L - i - 1; if (!d) continue;
+      if (p === 0 && d === 1 && L > 1 && +s[L - 2] !== 0) o += 'เอ็ด';          // ...1 ท้าย = เอ็ด (ยกเว้นตัวเลขเดี่ยว/ x01)
+      else if (p === 1 && d === 2) o += 'ยี่สิบ';
+      else if (p === 1 && d === 1) o += 'สิบ';
+      else o += D[d] + P[p]; }
+    return o; };
+  const words = s => { let o = ''; const parts = []; while (s.length > 6) { parts.unshift(s.slice(-6)); s = s.slice(0, -6); } parts.unshift(s);
+    parts.forEach((x, i) => { const w = six(x.replace(/^0+/, '') || '0'); o += (w || '') + (i < parts.length - 1 ? 'ล้าน' : ''); });
+    return o; };
+  const baht = Math.floor(n), sat = Math.round((n - baht) * 100);
+  let out = (baht ? words(String(baht)) + 'บาท' : '') + (sat ? words(String(sat)) + 'สตางค์' : 'ถ้วน');
+  return (neg ? 'ลบ' : '') + out;
+}
+/* ค่าสูงสุดของแกนกราฟให้ "ลงตัว" แบ่ง 4 ช่องได้เลขกลม (เช่น 14,600 → 16,000 ช่องละ 4,000 แทน 15,000 ช่องละ 3,750) */
+function niceTop(mx, ticks) {
+  ticks = ticks || 4; if (!(mx > 0)) return ticks;
+  const raw = mx / ticks, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map(k => k * p).find(s => s >= raw);
+  return step * ticks;
+}
+/* ตรวจคุณภาพข้อมูล → รายการที่ควรแก้ในชีตต้นฉบับ [{level:'err'|'warn', cat, docNo, date, msg}] */
+function auditData(records) {
+  const out = [], seen = new Map();
+  for (const r of records) {
+    const doc = String(r.docNo || '').toUpperCase(); const base = { cat: r.cat, docNo: doc, date: r.date, id: r.id };
+    if (seen.has(doc)) out.push(Object.assign({}, base, { level: 'err', msg: 'เลขที่เอกสารซ้ำกับรายการวันที่ ' + seen.get(doc) }));
+    else seen.set(doc, r.date);
+    if (!/^FR\d{7}$/.test(doc)) out.push(Object.assign({}, base, { level: 'warn', msg: 'เลขที่เอกสารมี ' + doc.length + ' ตัวอักษร (ปกติ FR + 7 หลัก = 9 ตัว)' }));
+    else if (doc.slice(2, 4) !== r.date.slice(2, 4)) out.push(Object.assign({}, base, { level: 'warn', msg: 'เลขเอกสาร FR' + doc.slice(2, 4) + ' ไม่ตรงกับปีของวันที่ (' + be(+r.date.slice(0, 4)) + ')' }));
+    const d = String(r.idcard || '').replace(/[\s-]/g, '');
+    if (/^\d+$/.test(d)) {
+      if (d.length !== 13) out.push(Object.assign({}, base, { level: 'warn', msg: 'เลขประจำตัวมี ' + d.length + ' หลัก (ควรเป็น 13 หลัก)' }));
+      else if (!thaiIdOk(d)) out.push(Object.assign({}, base, { level: 'warn', msg: 'เลขประจำตัว 13 หลัก แต่เลขตรวจสอบหลักสุดท้ายไม่ถูกต้อง (อาจพิมพ์ผิด)' }));
+    }
+    if (!PAY_TYPES.includes(r.pay)) out.push(Object.assign({}, base, { level: 'warn', msg: 'วิธีชำระเงิน "' + (r.pay || 'ว่าง') + '" ไม่ใช่ เงินสด/โอน' }));
+    if (!(Number(r.amount) > 0)) out.push(Object.assign({}, base, { level: 'err', msg: 'จำนวนเงินเป็น 0 หรือว่าง' }));
+  }
+  return out.sort((a, b) => (a.level === b.level ? 0 : a.level === 'err' ? -1 : 1) || (a.date < b.date ? -1 : 1));
+}
+/* ลายเซ็นข้อมูลของรายการ (ใช้ตรวจว่าค่าที่แก้ไขขึ้นชีตจริงแล้ว) */
+const recSig = r => [r.cat, r.date, r.time || '', String(r.docNo).toUpperCase(), r.name, r.idcard, r.detail, Number(r.amount) || 0, r.pay, r.note]
+  .map(v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim()).join('␟');
 
 /* รวมยอดตามหมวด/ช่องทางชำระ ในช่วงเวลา */
 function summarize(records, range) {
@@ -1176,10 +1296,14 @@ function validateRecord(rec, allRecords, todayIso) {
     if (allRecords.some(x => x.id !== rec.id && String(x.docNo).toUpperCase() === doc)) errors.docNo = 'เลขที่เอกสารนี้มีอยู่แล้วในระบบ';
     const yy = doc.slice(2, 4), dy = String(rec.date || '').slice(2, 4);
     if (!errors.docNo && parseIso(rec.date) && yy !== dy) warns.docNo = 'เลขที่เอกสารขึ้นต้น FR' + yy + ' แต่วันที่เป็นปี ' + be(+rec.date.slice(0, 4)) + ' — โปรดตรวจสอบอีกครั้ง';
+    /* ข้อมูลจริงเกือบทั้งหมดเป็น FR + 7 หลัก (เช่น FR2600123) — จำนวนหลักต่างไปมักพิมพ์ตกหรือเกิน 0 */
+    else if (!errors.docNo && doc.length !== 9) warns.docNo = 'เลขที่เอกสารมี ' + (doc.length - 2) + ' หลักหลัง FR (ปกติ 7 หลัก เช่น FR' + (dy || '26') + '00123) — โปรดตรวจสอบ';
   }
   if (String(rec.name || '').trim().length < 2) errors.name = 'กรุณากรอกชื่อ-นามสกุล หรือชื่อบริษัท';
   const idc = String(rec.idcard || '').trim();
-  if (idc) { const digits = idc.replace(/[\s-]/g, ''); if (/^\d+$/.test(digits) && digits.length !== 13) warns.idcard = 'ตัวเลข ' + digits.length + ' หลัก (ปกติ 13 หลัก) — โปรดตรวจสอบว่าไม่ได้ขาดเลข 0 ด้านหน้า'; }
+  if (idc) { const digits = idc.replace(/[\s-]/g, '');
+    if (/^\d+$/.test(digits) && digits.length !== 13) warns.idcard = 'ตัวเลข ' + digits.length + ' หลัก (ปกติ 13 หลัก) — โปรดตรวจสอบว่าไม่ได้ขาดเลข 0 ด้านหน้า';
+    else if (/^\d{13}$/.test(digits) && !thaiIdOk(digits)) warns.idcard = 'เลขตรวจสอบหลักสุดท้ายไม่ถูกต้อง — เลข 13 หลักนี้อาจพิมพ์ผิด โปรดตรวจกับบัตรอีกครั้ง'; }
   if (!String(rec.detail || '').trim()) errors.detail = 'กรุณากรอกรายละเอียดการปรับ';
   const amt = Number(rec.amount);
   if (!(amt > 0)) errors.amount = 'กรุณากรอกจำนวนเงินมากกว่า 0'; else if (amt > 1000000) errors.amount = 'จำนวนเงินสูงผิดปกติ (เกิน 1,000,000 บาท)';
@@ -1197,6 +1321,8 @@ function normalizeRecord(o) {
   r.cat = String(r.cat || '').toUpperCase();
   r.docNo = String(r.docNo || '').trim().toUpperCase();
   ['name', 'idcard', 'detail', 'note', 'time', 'fileUrl', 'fileName', 'pay'].forEach(k => r[k] = r[k] == null ? '' : String(r[k]).trim());
+  r.name = r.name.replace(/\s+/g, ' '); r.detail = r.detail.replace(/\s+/g, ' ');   // ให้ตรงกับที่ Code.gs อ่านกลับ
+  r.idcard = fixIdCard(r.idcard); r.pay = normPay(r.pay);
   return r;
 }
 /*==PURE_END==*/
@@ -1219,7 +1345,7 @@ const S = {
   ui: { A: newUi(), B: newUi(), C: newUi() },
   form: { A: { pay: 'เงินสด' }, B: { pay: 'เงินสด' }, C: { pay: 'เงินสด' } },
   editing: { A: null, B: null, C: null }, file: { A: null, B: null, C: null }, warnAck: { A: '', B: '', C: '' },
-  pending: new Set(), flashId: null, charts: {}, busy: false, emptyCloud: false, meta: null
+  pending: new Map(), pendingDel: new Set(), flashId: null, charts: {}, busy: false, emptyCloud: false, meta: null
 };
 
 function loadCfg() {
@@ -1301,7 +1427,8 @@ function metaText(m) {
   if (!m || !m.files || !m.files.length) return '';
   return 'อ่านจากไฟล์ปี พ.ศ. ' + m.years.map(be).join(', ') + ' (' + m.files.length + ' ไฟล์ในโฟลเดอร์ Drive)' +
     (m.fixedDates ? ' • แปลงปีของวันที่อัตโนมัติ ' + m.fixedDates + ' รายการ' : '') +
-    (m.skipped && m.skipped.length ? ' • ข้ามแถวที่ข้อมูลไม่สมบูรณ์ ' + m.skipped.length + ' แถว' : '');
+    (m.fixedIds ? ' • เติมเลข 0 หน้าเลขประจำตัว ' + m.fixedIds + ' รายการ' : '') +
+    (m.skipped && m.skipped.length ? ' • ข้ามแถวที่ข้อมูลไม่สมบูรณ์ ' + (m.skippedTotal || m.skipped.length) + ' แถว' : '');
 }
 
 /* อ่านข้อมูลด้วย JSONP (Apps Script ไม่เปิด CORS ให้ fetch อ่าน response) */
@@ -1319,30 +1446,55 @@ function jsonp(params) {
     s.src = u.toString(); document.head.appendChild(s);
   });
 }
-/* ส่งข้อมูลด้วย POST แบบ no-cors (อ่านผลไม่ได้ จึงตรวจซ้ำด้วยการโหลดข้อมูลใหม่) */
+/* ส่งข้อมูลด้วย POST แบบ no-cors (อ่าน response ไม่ได้) → แนบ rid ไปด้วย แล้วถามผลจริงภายหลังด้วย waitReceipt() */
 async function gasPost(payload) {
   payload.key = S.cfg.accessKey || '';
+  payload.rid = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   await fetch(gasUrl(), { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+  return payload.rid;
+}
+/* ถามใบตอบรับผลบันทึกจาก Code_Fines_v3 → {found:true, ok, error} | {legacy:true} (สคริปต์รุ่นเก่าไม่มี action นี้) | {unknown:true} */
+async function waitReceipt(rid) {
+  for (let i = 0; i < CONFIG.RECEIPT_TRIES; i++) {
+    await sleep(i === 0 ? 900 : Math.min(1000 + i * 400, 4000));
+    let d; try { d = await jsonp({ action: 'result', rid }); } catch (e) { continue; }   // เน็ตสะดุดชั่วคราว → ถามใหม่
+    if (d && d.found) return d;
+    if (d && d.ok === false) return { legacy: true };                                     // v2: "ไม่รู้จัก action"
+  }
+  return { unknown: true };
 }
 
+/* โหลดข้อมูลล่าสุด — loadSeq กันกรณีกดโหลดซ้อนกันแล้วผลที่มาช้ากว่า (ข้อมูลเก่ากว่า) ทับผลใหม่ */
+let loadSeq = 0;
 async function loadAll(opts) {
   opts = opts || {};
   if (!isCloud()) { loadLocal(); setSync('local'); S.emptyCloud = false; refreshAll(); return true; }
+  const my = ++loadSeq;
   setSync('syncing');
   try {
     const d = await jsonp({ action: 'getData' });
+    if (my !== loadSeq) return null;                                     // มีการโหลดที่ใหม่กว่าแล้ว — ทิ้งผลนี้
     if (!d || !d.ok) throw new Error((d && d.error) || 'เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ');
-    const list = [];
+    let list = [];
     CAT_KEYS.forEach(c => (d.data[c] || []).forEach(o => { o.cat = c; list.push(normalizeRecord(o)); }));
-    const ids = new Set(list.map(r => r.id));
-    S.records.forEach(r => { if (S.pending.has(r.id) && !ids.has(r.id)) { r._pending = true; list.push(r); } });   // ยังไม่ขึ้นชีต → คงไว้บนจอ
+    /* รายการที่ส่งไปแล้วแต่ชีตยังไม่ตรง: คงฉบับในเครื่องไว้ (กันจอเด้งกลับเป็นค่าเก่าระหว่างรอ)
+       ชีตตรงกับที่ส่งแล้ว (ลายเซ็นข้อมูลเท่ากัน) = ยืนยันสำเร็จ ถอดออกจากรายการรอ */
+    S.pending.forEach((p, id) => {
+      const i = list.findIndex(r => r.id === id);
+      if (i >= 0 && (recSig(list[i]) === p.sig || Date.now() - p.t > 120000)) { S.pending.delete(id); return; }   // ตรงแล้ว หรือรอนานเกิน 2 นาที → เชื่อชีต
+      const loc = Object.assign({}, p.rec, { _pending: true });
+      if (i >= 0) list[i] = Object.assign(loc, { fileUrl: p.rec.fileUrl || list[i].fileUrl, fileName: p.rec.fileName || list[i].fileName }); else list.push(loc);
+    });
+    S.pendingDel.forEach(id => { if (list.some(r => r.id === id)) list = list.filter(r => r.id !== id); else S.pendingDel.delete(id); });
     S.records = list.filter(r => parseIso(r.date));
     S.emptyCloud = list.length === 0;
     S.meta = d.meta || null;
     S.sync.last = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    S.sync.lastIso = isoOf(new Date()); S.sync.lastHM = nowHM();
     setSync('ok', metaText(S.meta)); saveLocal(); refreshAll();
     return true;
   } catch (e) {
+    if (my !== loadSeq) return null;
     const cached = (() => { try { return JSON.parse(store.get(CONFIG.STORE_KEY) || 'null'); } catch (x) { return null; } })();
     if (Array.isArray(cached) && !S.records.length) S.records = cached.map(normalizeRecord);
     setSync('err', e.message); refreshAll();
@@ -1351,7 +1503,9 @@ async function loadAll(opts) {
   }
 }
 
-/* ---- บันทึก/แก้ไข ---- */
+/* ---- บันทึก/แก้ไข ----
+   คืนค่า {ok:true, verified} | {ok:false, error, serverRejected}
+   ลำดับยืนยัน: 1) ใบตอบรับจากเซิร์ฟเวอร์ (v3) → รู้ผลจริงทันที  2) ถ้าเป็นสคริปต์รุ่นเก่า → โหลดซ้ำแล้วเทียบลายเซ็นข้อมูล */
 async function persistSave(rec, file) {
   const exists = S.records.findIndex(r => r.id === rec.id);
   if (!isCloud()) {
@@ -1362,16 +1516,30 @@ async function persistSave(rec, file) {
     }
     refreshAll(); return { ok: true, verified: true };
   }
-  rec._pending = true; S.pending.add(rec.id);
-  if (file) { rec.fileName = file.name; }
+  const prev = exists >= 0 ? S.records[exists] : null;
+  const prevPending = S.pending.get(rec.id);
+  if (file) rec.fileName = file.name;
+  S.pending.set(rec.id, { rec: Object.assign({}, rec), sig: recSig(rec), t: Date.now() });
+  rec._pending = true;
   if (exists >= 0) S.records[exists] = rec; else S.records.push(rec);
   refreshAll(); setSync('syncing');
   const payload = { action: 'save', record: stripLocal(rec), file: file ? { name: file.name, mime: file.mime, base64: file.base64 } : null };
-  try { await gasPost(payload); } catch (e) { setSync('err', 'ส่งข้อมูลไม่สำเร็จ: ' + e.message); toast('err', 'ส่งข้อมูลไม่สำเร็จ', 'รายการยังแสดงในเครื่อง (สถานะรอซิงก์) — ตรวจสอบอินเทอร์เน็ตแล้วกดบันทึกซ้ำได้ ระบบกันบันทึกซ้ำให้'); return { ok: false }; }
-  for (let i = 0; i < 3; i++) {                                   // ตรวจซ้ำว่าขึ้นชีตจริง
-    await sleep(i === 0 ? 1300 : 2500);
-    const ok = await loadAll({ silent: true });
-    if (ok && S.records.some(r => r.id === rec.id && !r._pending)) { S.pending.delete(rec.id); return { ok: true, verified: true }; }
+  let rid;
+  try { rid = await gasPost(payload); }
+  catch (e) { setSync('err', 'ส่งข้อมูลไม่สำเร็จ: ' + e.message); return { ok: false, error: 'ส่งข้อมูลไม่สำเร็จ (' + e.message + ') — รายการยังแสดงในเครื่องสถานะ "รอซิงก์" ตรวจสอบอินเทอร์เน็ตแล้วกดบันทึกซ้ำได้ ระบบกันบันทึกซ้ำให้' }; }
+  const rc = await waitReceipt(rid);
+  if (rc.found && !rc.ok) {                                         // เซิร์ฟเวอร์ปฏิเสธ → คืนสภาพเดิม และบอกเหตุผลจริง
+    if (prevPending) S.pending.set(rec.id, prevPending); else S.pending.delete(rec.id);
+    const i = S.records.findIndex(r => r.id === rec.id);
+    if (i >= 0) { if (prev) S.records[i] = prev; else S.records.splice(i, 1); }
+    setSync('ok', metaText(S.meta)); refreshAll();
+    return { ok: false, serverRejected: true, error: rc.error || 'เซิร์ฟเวอร์ไม่รับข้อมูล' };
+  }
+  if (rc.found && rc.ok) { S.pending.delete(rec.id); await loadAll({ silent: true }); return { ok: true, verified: true }; }   // เซิร์ฟเวอร์ยืนยันแล้ว → ให้ข้อมูลจากชีตเป็นหลัก
+  for (let i = 0; i < 3; i++) {                                     // สคริปต์รุ่นเก่า/ไม่ทราบผล → ตรวจซ้ำจากข้อมูลในชีต
+    await sleep(i === 0 ? 500 : 2500);
+    await loadAll({ silent: true });
+    if (!S.pending.has(rec.id)) return { ok: true, verified: true };
   }
   return { ok: true, verified: false };
 }
@@ -1379,9 +1547,14 @@ const stripLocal = r => { const o = Object.assign({}, r); delete o._pending; if 
 
 async function persistDelete(id) {
   if (!isCloud()) { S.records = S.records.filter(r => r.id !== id); saveLocal(); refreshAll(); return true; }
-  const backup = S.records.slice(); S.records = S.records.filter(r => r.id !== id); S.pending.delete(id); refreshAll(); setSync('syncing');
-  try { await gasPost({ action: 'delete', id }); } catch (e) { S.records = backup; refreshAll(); setSync('err', e.message); toast('err', 'ลบรายการไม่สำเร็จ', e.message); return false; }
-  for (let i = 0; i < 3; i++) { await sleep(i === 0 ? 1300 : 2500); const ok = await loadAll({ silent: true }); if (ok && !S.records.some(r => r.id === id)) return true; }
+  const backup = S.records.slice(), bPend = S.pending.get(id);
+  S.records = S.records.filter(r => r.id !== id); S.pending.delete(id); S.pendingDel.add(id); refreshAll(); setSync('syncing');
+  const undo = msg => { S.records = backup; S.pendingDel.delete(id); if (bPend) S.pending.set(id, bPend); refreshAll(); setSync('err', msg); toast('err', 'ลบรายการไม่สำเร็จ', msg); return false; };
+  let rid; try { rid = await gasPost({ action: 'delete', id }); } catch (e) { return undo(e.message); }
+  const rc = await waitReceipt(rid);
+  if (rc.found && !rc.ok) return undo(rc.error || 'เซิร์ฟเวอร์ไม่รับคำสั่งลบ');
+  if (rc.found && rc.ok) { await loadAll({ silent: true }); return true; }
+  for (let i = 0; i < 3; i++) { await sleep(i === 0 ? 500 : 2500); await loadAll({ silent: true }); if (!S.pendingDel.has(id)) return true; }
   toast('warn', 'ยังยืนยันการลบไม่ได้', 'กดปุ่มโหลดข้อมูลใหม่เพื่อตรวจสอบสถานะในชีตอีกครั้ง'); return true;
 }
 
@@ -1590,8 +1763,12 @@ async function submitForm(c) {
     const res = await persistSave(rec, file);
     if (res.ok) {
       toast(res.verified ? 'ok' : 'warn', old ? 'แก้ไขข้อมูลสำเร็จ' : 'บันทึกข้อมูลสำเร็จ',
-        res.verified ? rec.docNo + ' • ' + baht(rec.amount) : 'ส่งข้อมูลแล้ว แต่ยังไม่พบในชีต (รอซิงก์) — กดโหลดข้อมูลใหม่เพื่อตรวจสอบ');
+        res.verified ? rec.docNo + ' • ' + baht(rec.amount) + (isCloud() ? ' • ยืนยันในชีตแล้ว' : '') : 'ส่งข้อมูลแล้ว แต่ยังไม่พบในชีต (รอซิงก์) — กดโหลดข้อมูลใหม่เพื่อตรวจสอบ');
       resetForm(c); closeForm(c); revealRecord(c, rec.id);
+    } else {
+      /* ไม่ล้างฟอร์ม เพื่อให้แก้ไขแล้วกดบันทึกซ้ำได้ทันที — แสดงเหตุผลจริงจากเซิร์ฟเวอร์ */
+      if (res.serverRejected && /เลขที่เอกสาร/.test(res.error)) showErr(c, 'docNo', res.error);
+      toast('err', res.serverRejected ? 'ระบบไม่รับข้อมูล' : 'ส่งข้อมูลไม่สำเร็จ', res.error);
     }
   } catch (e) { toast('err', 'บันทึกไม่สำเร็จ', e.message); }
   finally { S.busy = false; setBusy($c('save'), false); }
@@ -1801,10 +1978,12 @@ function renderBanners() {
   const b = $('#banners'); let h = '';
   if (isCloud() && S.sync.status === 'err') h += '<div class="banner err"><div class="grow"><b>เชื่อมต่อ Google Drive ไม่สำเร็จ</b><br>' + esc(S.sync.msg) + ' — ขณะนี้แสดงข้อมูลที่เก็บไว้ในเครื่อง</div><button class="btn dark sm" id="bnRetry" type="button">' + icon('refresh') + 'ลองใหม่</button><button class="btn ghost sm" id="bnSet" type="button">ตรวจสอบการตั้งค่า</button></div>';
   if (isCloud() && S.sync.status === 'ok' && S.emptyCloud) h += '<div class="banner"><div class="grow"><b>ยังไม่พบข้อมูลในโฟลเดอร์ Drive</b><br>ตรวจสอบว่าชื่อไฟล์มีปี (เช่น ... ปี. 2026) และชื่อชีตขึ้นต้นว่า "หมวดA / หมวดB / หมวดC" แล้วกดปุ่มโหลดข้อมูลใหม่</div><button class="btn dark sm" id="bnRetry" type="button">' + icon('refresh') + 'โหลดใหม่</button></div>';
+  if (isCloud() && S.sync.status === 'ok' && S.meta && S.meta.warnings && S.meta.warnings.length)
+    h += '<div class="banner err"><div class="grow"><b>ตรวจพบความเสี่ยงยอดซ้ำในโฟลเดอร์ข้อมูล</b><br>' + S.meta.warnings.map(esc).join('<br>') + '</div></div>';
   if (isCloud() && S.sync.status === 'ok' && S.meta && ((S.meta.skipped && S.meta.skipped.length) || (S.meta.ignored && S.meta.ignored.length))) {
     const sk = (S.meta.skipped || []).slice(0, 3).map(x => esc(x.file.replace(/^.*ปี\.?\s*/, 'ปี ') + ' / ' + x.sheet + ' แถว ' + x.row + ': ' + x.reason)).join('<br>');
     const ig = (S.meta.ignored || []).map(x => esc(x)).join('<br>');
-    h += '<div class="banner"><div class="grow"><b>' + (S.meta.skipped.length ? 'มี ' + S.meta.skipped.length + ' แถวในไฟล์ที่ยังอ่านเข้าระบบไม่ได้' : 'มีไฟล์ในโฟลเดอร์ที่ยังไม่ได้อ่าน') + '</b><br>' + sk + (sk && ig ? '<br>' : '') + ig + '</div><button class="btn ghost sm" id="bnHideMeta" type="button">ซ่อน</button></div>';
+    h += '<div class="banner"><div class="grow"><b>' + (S.meta.skipped.length ? 'มี ' + (S.meta.skippedTotal || S.meta.skipped.length) + ' แถวในไฟล์ที่ยังอ่านเข้าระบบไม่ได้' : 'มีไฟล์ในโฟลเดอร์ที่ยังไม่ได้อ่าน') + '</b><br>' + sk + (sk && ig ? '<br>' : '') + ig + '</div><button class="btn ghost sm" id="bnHideMeta" type="button">ซ่อน</button></div>';
   }
   if (!isCloud() && !S.cfg.hideLocalTip) h += '<div class="banner info"><div class="grow"><b>กำลังใช้งานโหมดในเครื่อง</b> — ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น หากต้องการให้หลายเครื่องใช้ข้อมูลร่วมกันและแนบไฟล์ขึ้น Google Drive ให้ตั้งค่า Web App URL</div><button class="btn dark sm" id="bnSet" type="button">' + icon('gear') + 'ตั้งค่าเชื่อมต่อ</button><button class="btn ghost sm" id="bnHide" type="button">ซ่อน</button></div>';
   b.innerHTML = h;
@@ -1846,25 +2025,33 @@ function logoSvg(sz) {
 }
 const COLW = [40, 82, 205, 112, 92, 285, 82, 64, 93];
 
+/* แหล่งข้อมูลและเวลาข้อมูล (ระบุในท้ายรายงานทุกหน้า เพื่อให้ผู้อ่านรู้ว่าตัวเลข ณ เวลาใด) */
+function dataAsOf() {
+  if (!isCloud()) return 'ข้อมูลในเครื่อง (ยังไม่เชื่อมต่อ Google Drive)';
+  if (S.sync.lastIso) return 'ข้อมูลจาก Google Drive ณ ' + fmtThaiDate(S.sync.lastIso) + ' ' + S.sync.lastHM + ' น.';
+  return 'ข้อมูลจาก Google Drive (ยังซิงก์ไม่สำเร็จ — แสดงข้อมูลที่เก็บไว้ในเครื่อง)';
+}
 function newPage(stage, o) {
   const el = document.createElement('div'); el.className = 'a4 ' + (o.cls || '');
   const now = new Date();
+  const pdpa = S.cfg.showId ? ' • มีข้อมูลส่วนบุคคล ใช้ภายในเท่านั้น' : '';
   el.innerHTML = '<div class="rh">' + logoSvg(58) + '<div><h1>' + esc(o.title) + '</h1><p>' + esc(o.sub || 'แผนกรักษาความปลอดภัย ศูนย์การค้า Seacon Bangkae') + '</p></div><div class="yr"' + (o.yrSmall ? ' style="font-size:26px;line-height:1.15"' : '') + '><small>' + esc(o.yrLbl || 'ปี พ.ศ.') + '</small>' + esc(o.year) + '</div></div>' +
-    '<div class="rb"></div><div class="rf"><span>จัดทำโดยระบบ SBK Fines • พิมพ์เมื่อ ' + fmtThaiDate(isoOf(now)) + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ' น.</span><span>' + esc(o.foot || '') + '</span><span class="pn"></span></div>';
+    '<div class="rb"></div><div class="rf"><span>ระบบ SBK Fines ' + CONFIG.APP_VER + ' • ' + esc(dataAsOf()) + ' • พิมพ์ ' + fmtThaiShort(isoOf(now)) + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ' น.</span><span>' + esc((o.foot || '') + pdpa) + '</span><span class="pn"></span></div>';
   stage.appendChild(el); return el;
 }
 function svgBars(mo, labels, w, h) {
   const n = labels.length, L = 54, R = 8, T = 20, B = 28, pw = w - L - R, ph = h - T - B;
-  const tot = mo.A.map((_, i) => mo.A[i] + mo.B[i] + mo.C[i]); const mx = Math.max.apply(null, tot.concat([1]));
-  const p = Math.pow(10, Math.floor(Math.log10(mx))); const top = Math.ceil(mx / p * 2) / 2 * p;
+  const tot = mo.A.map((_, i) => mo.A[i] + mo.B[i] + mo.C[i]); const mx = Math.max.apply(null, tot.concat([0]));
+  const top = niceTop(mx * 1.06 || 1, 4);                       // เผื่อหัวแท่ง 6% สำหรับตัวเลขกำกับ แล้วปัดให้ช่องละเลขกลม
   const bw = pw / n; const fl = n > 12 ? 9.5 : 11.5; let s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" style="font-family:Sarabun,sans-serif">';
-  for (let g = 0; g <= 4; g++) { const y = T + ph - ph * g / 4; s += '<line x1="' + L + '" x2="' + (w - R) + '" y1="' + y + '" y2="' + y + '" stroke="#e4e8f6"/><text x="' + (L - 6) + '" y="' + (y + 4) + '" font-size="11" fill="#7a82a6" text-anchor="end">' + fmt(top * g / 4) + '</text>'; }
+  for (let g = 0; g <= 4; g++) { const y = T + ph - ph * g / 4; s += '<line x1="' + L + '" x2="' + (w - R) + '" y1="' + y + '" y2="' + y + '" stroke="#e4e8f6"/>' + (mx || !g ? '<text x="' + (L - 6) + '" y="' + (y + 4) + '" font-size="11" fill="#7a82a6" text-anchor="end">' + fmt(top * g / 4) + '</text>' : ''); }
   for (let i = 0; i < n; i++) {
     let y = T + ph; const x = L + i * bw + bw * .18, ww = bw * .64;
     [['A', '#4f46e5'], ['B', '#d97706'], ['C', '#e11d48']].forEach(([c, col]) => { const v = mo[c][i]; if (v > 0) { const hh = ph * v / top; y -= hh; s += '<rect x="' + x + '" y="' + y + '" width="' + ww + '" height="' + hh + '" fill="' + col + '" rx="2"/>'; } });
     if (tot[i] > 0 && n <= 16) s += '<text x="' + (x + ww / 2) + '" y="' + (y - 4) + '" font-size="10.5" font-weight="600" fill="#1b2240" text-anchor="middle">' + fmt(tot[i]) + '</text>';
     s += '<text x="' + (x + ww / 2) + '" y="' + (h - 9) + '" font-size="' + fl + '" fill="#47507a" text-anchor="middle">' + labels[i] + '</text>';
   }
+  if (!mx) s += '<text x="' + (L + pw / 2) + '" y="' + (T + ph / 2) + '" font-size="13" fill="#9aa1c0" text-anchor="middle">ไม่มีรายการในช่วงเวลานี้</text>';
   const lg = [['A', '#4f46e5', 'หมวด A'], ['B', '#d97706', 'หมวด B'], ['C', '#e11d48', 'หมวด C']];
   lg.forEach((x, i) => { s += '<rect x="' + (w - R - 210 + i * 70) + '" y="2" width="10" height="10" rx="2" fill="' + x[1] + '"/><text x="' + (w - R - 196 + i * 70) + '" y="11" font-size="11" fill="#47507a">' + x[2] + '</text>'; });
   return s + '</svg>';
@@ -1874,7 +2061,7 @@ function repInfoOf() {
   const period = S.rep.period, ref = S.rep.ref; const range = rangeFor(period, ref); const d = parseIso(ref) || new Date();
   const label = periodLabel(period, ref); const y = d.getFullYear(); const mm = pad2(d.getMonth() + 1);
   const M = { year: ['ปี พ.ศ.', String(be(y)), 'ปี' + be(y)], month: ['ประจำเดือน', TH_MONTHS_S[d.getMonth()] + ' ' + be(y), 'เดือน' + be(y) + '-' + mm],
-    week: ['สัปดาห์', label.replace(/ (\d{4})$/, (m, y4) => ' ' + y4.slice(2)), 'สัปดาห์_' + range[0]], day: ['วันที่', fmtThaiShort(ref), 'วันที่_' + ref] }[period];
+    week: ['สัปดาห์', label.replace(/ (\d{4})/g, (m, y4) => ' ' + y4.slice(2)), 'สัปดาห์_' + range[0]], day: ['วันที่', fmtThaiShort(ref), 'วันที่_' + ref] }[period];
   return { period, ref, range, label, year: y, yrLbl: M[0], yrTxt: M[1], key: M[2], yrSmall: period !== 'year' };
 }
 /* กราฟแท่งตามช่วง: ปี → 12 เดือน | เดือน → รายวัน | สัปดาห์/วัน → 7 วันของสัปดาห์นั้น */
@@ -1888,37 +2075,93 @@ function barsOf(rep) {
   const labels = rep.period === 'month' ? days.map(x => String(+x.slice(8))) : days.map(x => WD[parseIso(x).getDay()] + ' ' + (+x.slice(8)));
   return { labels, mo, title: (rep.period === 'month' ? 'ยอดเงินรายวัน ' + rep.label : 'ยอดเงินรายวัน สัปดาห์ ' + periodLabel('week', rep.ref)) + ' (บาท)' };
 }
+/* ข้อความ % เปลี่ยนแปลงแบบทางการ: "เพิ่มขึ้นร้อยละ 12.5" / "ลดลงร้อยละ 3.0" / "เท่าเดิม" / ฐานเป็นศูนย์ */
+function changeText(now, prev) {
+  const p = pctChange(now, prev);
+  if (p === null) return now ? 'ช่วงก่อนหน้าไม่มีรายการ (เปรียบเทียบร้อยละไม่ได้)' : 'ไม่มีรายการทั้งสองช่วง';
+  if (Math.abs(p) < 0.05) return 'เท่าเดิม';
+  return (p > 0 ? 'เพิ่มขึ้น' : 'ลดลง') + 'ร้อยละ ' + Math.abs(p).toLocaleString('th-TH', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+const pctTxt = (v, t) => t ? (v * 100 / t).toLocaleString('th-TH', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '0.0';
+const deltaChip = (now, prev) => { const p = pctChange(now, prev); return p === null ? '' : '<em class="dl">' + (Math.abs(p) < 0.05 ? '±0%' : (p > 0 ? '▲ ' : '▼ ') + Math.abs(p).toFixed(1) + '%') + '</em>'; };
+
 function summaryPage(stage, rep) {
-  const year = rep.year; const pg = newPage(stage, { title: 'รายงานสรุปยอดปรับและชดใช้ค่าเสียหาย', year: rep.yrTxt, yrLbl: rep.yrLbl, yrSmall: rep.yrSmall, foot: 'สรุปภาพรวมทุกหมวด • ' + rep.label });
+  const year = rep.year; const pg = newPage(stage, { cls: 'sum', title: 'รายงานสรุปยอดปรับและชดใช้ค่าเสียหาย', year: rep.yrTxt, yrLbl: rep.yrLbl, yrSmall: rep.yrSmall, foot: 'สรุปภาพรวมทุกหมวด • ' + rep.label });
   const ry = S.records.filter(r => inRange(r.date, rep.range)); const sm = summarize(ry, null);
+  const cmp = compareRange(rep.period, rep.ref, todayIso()); const pr = cmp && cmp.range; const ps = summarize(S.records, pr);
+  const prevLbl = cmp ? cmp.label : '';
+  /* ช่วงปัจจุบันยังไม่จบ → ตัดยอดช่วงปัจจุบันถึงวันนี้ด้วย (ปกติไม่มีรายการอนาคตอยู่แล้ว ระบบห้ามบันทึกวันที่เกินวันนี้) */
+  const prevWord = cmp && cmp.partial ? 'ช่วงเดียวกันของ' + PREV_NAME[rep.period].replace('ก่อนหน้า', 'ก่อน') : PREV_NAME[rep.period];
   const bars = barsOf(rep); const yy = yearlyByCat(S.records); const rs = topReasons(ry, 5);
-  const sorted = ry.slice().sort(cmpRec); const first = sorted[0], last = sorted[sorted.length - 1];
-  const cash = sm.pay['เงินสด'], tr = sm.pay['โอน']; const tp = Math.max(1, cash.sum + tr.sum);
-  const kp = (cls, t, o) => '<div class="' + cls + '"><span>' + t + '</span><b>' + baht(o.sum) + '</b><span>' + fmt(o.n) + ' รายการ</span></div>';
-  const yrows = yy.years.slice().reverse().map(y => { const i = yy.years.indexOf(y); const t = yy.A[i] + yy.B[i] + yy.C[i];
-    return '<tr' + (y === year ? ' style="background:#eef7f6;font-weight:700"' : '') + '><td>' + be(y) + '</td><td class="r">' + fmt(yy.A[i]) + '</td><td class="r">' + fmt(yy.B[i]) + '</td><td class="r">' + fmt(yy.C[i]) + '</td><td class="r">' + fmt(t) + '</td></tr>'; }).join('');
+  const cash = sm.pay['เงินสด'], tr = sm.pay['โอน']; const other = { n: sm.total.n - cash.n - tr.n, sum: sm.total.sum - cash.sum - tr.sum };
+  const kp = (cls, t, o, p) => '<div class="' + cls + '"><span>' + t + '</span><b>' + baht(o.sum) + '</b><span>' + fmt(o.n) + ' รายการ ' + deltaChip(o.sum, p.sum) + '</span></div>';
+
+  /* บทสรุปภาพรวม (ภาษาทางการ) — ทุกตัวเลขมาจาก summarize() ชุดเดียวกับตาราง จึงตรงกันทั้งหน้า */
+  const inPh = { year: 'ใน' + rep.label.replace('ปี ', 'ปี พ.ศ. '), month: 'ในเดือน' + rep.label, week: 'ในสัปดาห์ระหว่างวันที่ ' + rep.label, day: 'ใน' + rep.label }[rep.period];
+  let exs;
+  if (!sm.total.n) exs = '<span class="h">บทสรุป</span>' + esc(inPh) + ' ไม่มีรายการเรียกเก็บค่าปรับหรือค่าชดใช้ค่าเสียหาย' + (ps.total.n ? ' (' + prevWord + ' ' + esc(prevLbl) + ' มี ' + fmt(ps.total.n) + ' รายการ ยอด ' + fmt(ps.total.sum) + ' บาท)' : '');
+  else {
+    const topC = CAT_KEYS.slice().sort((x, y) => sm[y].sum - sm[x].sum)[0];
+    exs = '<span class="h">บทสรุป</span>' + esc(inPh) + ' แผนกรักษาความปลอดภัยได้ดำเนินการเรียกเก็บค่าปรับและค่าชดใช้ค่าเสียหาย รวมทั้งสิ้น <b>' + fmt(sm.total.n) + ' รายการ</b> เป็นจำนวนเงิน <b>' + fmt(sm.total.sum) + ' บาท</b> (' + bahtText(sm.total.sum) + ')' +
+      ' แบ่งเป็นรับชำระด้วยเงินสด ' + fmt(cash.sum) + ' บาท (' + fmt(cash.n) + ' รายการ) และเงินโอน ' + fmt(tr.sum) + ' บาท (' + fmt(tr.n) + ' รายการ)' + (other.n ? ' และช่องทางอื่น ' + fmt(other.sum) + ' บาท (' + fmt(other.n) + ' รายการ)' : '') +
+      ' หมวดที่มียอดสูงสุดคือ' + esc(CATS[topC].full) + ' ' + fmt(sm[topC].sum) + ' บาท คิดเป็นร้อยละ ' + pctTxt(sm[topC].sum, sm.total.sum) + ' ของยอดรวม' +
+      (pr ? ' เมื่อเทียบกับ' + prevWord + ' (' + esc(prevLbl) + ' ยอด ' + fmt(ps.total.sum) + ' บาท) ยอดรวม<b>' + changeText(sm.total.sum, ps.total.sum) + '</b>' : '');
+  }
+
+  /* ตารางสรุปแยกหมวด × ช่องทางชำระ (ใช้กระทบยอดเงินนำส่ง) */
+  const catRow = c => { const rr = ry.filter(r => r.cat === c); const cs = rr.filter(r => r.pay === 'เงินสด').reduce((t, r) => t + r.amount, 0), ts = rr.filter(r => r.pay === 'โอน').reduce((t, r) => t + r.amount, 0);
+    return '<tr><td><i class="dot" style="background:' + CATS[c].color + '"></i>' + c + ' ' + ({ A: 'บัตรสูญหาย', B: 'ผู้รับเหมาผิดระเบียบ', C: 'ชดใช้ค่าเสียหาย' }[c]) + '</td><td class="r">' + fmt(sm[c].n) + '</td><td class="r">' + fmt(cs) + '</td><td class="r">' + fmt(ts) + '</td><td class="r"><b>' + fmt(sm[c].sum) + '</b></td><td class="r">' + pctTxt(sm[c].sum, sm.total.sum) + '</td><td class="r">' + fmt(ps[c].sum) + '</td></tr>'; };
+  const sumTbl = '<table class="sm"><thead><tr><th>หมวด</th><th class="r">รายการ</th><th class="r">เงินสด</th><th class="r">เงินโอน</th><th class="r">รวม (บาท)</th><th class="r">ร้อยละ</th><th class="r">' + (pr ? PREV_NAME[rep.period].replace('ก่อนหน้า', 'ก่อน') + (cmp.partial ? '*' : '') : '-') + '</th></tr></thead><tbody>' +
+    CAT_KEYS.map(catRow).join('') +
+    '<tr class="tt"><td>รวมทุกหมวด</td><td class="r">' + fmt(sm.total.n) + '</td><td class="r">' + fmt(cash.sum) + '</td><td class="r">' + fmt(tr.sum) + '</td><td class="r">' + fmt(sm.total.sum) + '</td><td class="r">' + (sm.total.sum ? '100.0' : '0.0') + '</td><td class="r">' + fmt(ps.total.sum) + '</td></tr></tbody></table>' +
+    '<div class="pbar" style="margin:7px 0 3px;height:9px"><i style="width:' + (sm.total.sum ? cash.sum * 100 / sm.total.sum : 0) + '%;background:#0f9d73"></i><i style="width:' + (sm.total.sum ? tr.sum * 100 / sm.total.sum : 0) + '%;background:#4f46e5"></i></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px"><span><b style="color:#0f9d73">■</b> เงินสด ร้อยละ ' + pctTxt(cash.sum, sm.total.sum) + '</span><span><b style="color:#4f46e5">■</b> เงินโอน ร้อยละ ' + pctTxt(tr.sum, sm.total.sum) + '</span></div>' +
+    (cmp && cmp.partial ? '<div class="note">* เทียบช่วงเดียวกัน ' + esc(cmp.label) + ' (ช่วงปัจจุบันยังไม่สิ้นสุด จึงเทียบระยะเวลาเท่ากัน)</div>' : '') +
+    (other.n ? '<div class="note">** มีช่องทางชำระอื่นที่ไม่ใช่ เงินสด/โอน ' + fmt(other.n) + ' รายการ ' + fmt(other.sum) + ' บาท (รวมอยู่ในยอดรวม)</div>' : '');
+
+  const yrows = yy.years.slice().reverse().slice(0, 5).map(y => { const i = yy.years.indexOf(y); const t = yy.A[i] + yy.B[i] + yy.C[i];
+    return '<tr' + (y === year ? ' class="tt"' : '') + '><td>' + be(y) + (y === year && rep.period !== 'year' ? '*' : '') + '</td><td class="r">' + fmt(yy.A[i]) + '</td><td class="r">' + fmt(yy.B[i]) + '</td><td class="r">' + fmt(yy.C[i]) + '</td><td class="r">' + fmt(t) + '</td></tr>'; }).join('');
   $('.rb', pg).innerHTML =
-    '<div class="kp">' + kp('A', 'หมวด A ปรับบัตรสูญหาย', sm.A) + kp('B', 'หมวด B ปรับผู้รับเหมาทำผิดระเบียบ', sm.B) + kp('C', 'หมวด C ยินยอมชดใช้ค่าเสียหาย', sm.C) + kp('T', 'ยอดรวมทุกหมวด', sm.total) + '</div>' +
-    '<div class="two"><div class="box"><h4>' + esc(bars.title) + '</h4>' + svgBars(bars.mo, bars.labels, 600, 250) + '</div><div>' +
-    '<div class="box" style="margin-bottom:10px"><h4>เปรียบเทียบรายปี (บาท)</h4><table><thead><tr><th>ปี พ.ศ.</th><th class="r">A</th><th class="r">B</th><th class="r">C</th><th class="r">รวม</th></tr></thead><tbody>' + yrows + '</tbody></table></div>' +
-    '<div class="box"><h4>ช่องทางชำระเงิน</h4><div class="pbar"><i style="width:' + (cash.sum * 100 / tp) + '%;background:#0f9d73"></i><i style="width:' + (tr.sum * 100 / tp) + '%;background:#4f46e5"></i></div>' +
-    '<div style="display:flex;justify-content:space-between;font-size:12.5px"><span><b style="color:#0f9d73">■</b> เงินสด ' + baht(cash.sum) + ' (' + cash.n + ' รายการ)</span><span><b style="color:#4f46e5">■</b> โอน ' + baht(tr.sum) + ' (' + tr.n + ' รายการ)</span></div></div></div></div>' +
-    '<div class="box" style="margin-top:10px"><h4>5 อันดับรายละเอียดการปรับที่พบบ่อยที่สุด' + (first ? ' <span style="font:400 12px Sarabun;color:#7a82a6">• เลขที่เอกสาร ' + esc(first.docNo) + ' ถึง ' + esc(last.docNo) + '</span>' : '') + '</h4>' +
-    (rs.length ? '<table><thead><tr><th class="c" style="width:50px">อันดับ</th><th>รายละเอียดการปรับ</th><th class="r" style="width:70px">ครั้ง</th><th class="r" style="width:110px">ยอดเงิน (บาท)</th></tr></thead><tbody>' + rs.map((x, i) => '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.k) + '</td><td class="r">' + x.n + '</td><td class="r">' + fmt(x.sum) + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty" style="padding:10px">ไม่มีรายการในช่วงเวลานี้</div>') + '</div>' +
-    '';
+    '<div class="kp">' + kp('A', 'หมวด A ปรับบัตรสูญหาย', sm.A, ps.A) + kp('B', 'หมวด B ปรับผู้รับเหมาทำผิดระเบียบ', sm.B, ps.B) + kp('C', 'หมวด C ยินยอมชดใช้ค่าเสียหาย', sm.C, ps.C) + kp('T', 'ยอดรวมทุกหมวด', sm.total, ps.total) + '</div>' +
+    '<div class="exs">' + exs + '</div>' +
+    '<div class="grid2"><div class="box"><h4>' + esc(bars.title) + '</h4>' + svgBars(bars.mo, bars.labels, 500, 166) + '</div>' +
+    '<div class="box"><h4>ตารางสรุปยอดแยกหมวดและช่องทางชำระเงิน (บาท)</h4>' + sumTbl + '</div></div>' +
+    '<div class="grid2b"><div class="box"><h4>5 อันดับรายละเอียดการปรับที่พบบ่อยที่สุด</h4>' +
+    (rs.length ? '<table class="sm"><thead><tr><th class="c" style="width:46px">อันดับ</th><th>รายละเอียดการปรับ</th><th class="r" style="width:60px">ครั้ง</th><th class="r" style="width:96px">ยอดเงิน (บาท)</th></tr></thead><tbody>' + rs.map((x, i) => '<tr><td class="c">' + (i + 1) + '</td><td class="wrap">' + esc(x.k.length > 58 ? x.k.slice(0, 56) + '…' : x.k) + '</td><td class="r">' + fmt(x.n) + '</td><td class="r">' + fmt(x.sum) + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty" style="padding:10px">ไม่มีรายการในช่วงเวลานี้</div>') + '</div>' +
+    '<div class="box"><h4>เปรียบเทียบยอดรวมรายปี (บาท)</h4><table class="sm"><thead><tr><th>ปี พ.ศ.</th><th class="r">หมวด A</th><th class="r">หมวด B</th><th class="r">หมวด C</th><th class="r">รวม</th></tr></thead><tbody>' + (yrows || '<tr><td colspan="5" class="c">ไม่มีข้อมูล</td></tr>') + '</tbody></table>' +
+    (rep.period !== 'year' ? '<div class="note">* ยอดทั้งปี (ไม่ใช่เฉพาะช่วงของรายงาน)</div>' : '') + '</div></div>';
   return pg;
 }
 function catPages(stage, c, rep) {
-  const C = CATS[c]; const all = catRecords(c); const seq = buildSeq(all);
+  const C = CATS[c]; const all = catRecords(c);
   const recs = all.filter(r => inRange(r.date, rep.range)).sort(cmpRec); const total = recs.reduce((s, r) => s + r.amount, 0);
+  const sumOf = p => recs.filter(r => r.pay === p).reduce((s, r) => s + r.amount, 0), cntOf = p => recs.filter(r => r.pay === p).length;
   const head = '<colgroup>' + COLW.map(w => '<col style="width:' + w + 'px">').join('') + '</colgroup><thead><tr><th class="c">ลำดับ</th><th>วันที่</th><th>ชื่อ-นามสกุล</th><th>รหัสบัตรประชาชน</th><th>No. เอกสารปรับ</th><th>รายละเอียดการปรับ</th><th class="r">จำนวนเงิน</th><th>วิธีชำระเงิน</th><th>หมายเหตุ</th></tr></thead>';
   const pages = [];
   const mk = () => { const pg = newPage(stage, { cls: 'c' + c, title: C.title, year: rep.yrTxt, yrLbl: rep.yrLbl, yrSmall: rep.yrSmall, foot: C.full + ' • ' + rep.label }); $('.rb', pg).innerHTML = '<table style="table-layout:fixed">' + head + '<tbody></tbody></table>'; pages.push(pg); return pg; };
   let pg = mk(), tb = $('tbody', pg);
   const add = html => { tb.insertAdjacentHTML('beforeend', html); const b = $('.rb', pg); if (b.scrollHeight > b.clientHeight + 1 && tb.children.length > 1) { tb.lastElementChild.remove(); pg = mk(); tb = $('tbody', pg); tb.insertAdjacentHTML('beforeend', html); } };
   if (!recs.length) add('<tr><td colspan="9" class="c" style="padding:18px;color:#7a82a6">ไม่มีรายการใน' + esc(rep.label) + '</td></tr>');
-  recs.forEach(r => add('<tr><td class="c">' + (seq.get(r.id) || '') + '</td><td>' + fmtDMY(r.date) + '</td><td>' + esc(r.name) + '</td><td>' + esc(S.cfg.showId ? (r.idcard || '-') : maskId(r.idcard)) + '</td><td>' + esc(r.docNo) + '</td><td>' + esc(r.detail) + '</td><td class="r">' + fmt(r.amount) + '</td><td>' + esc(r.pay) + '</td><td>' + esc(r.note) + '</td></tr>'));
-  add('<tr class="tot"><td colspan="6" class="r">ยอดรวม</td><td class="r">' + fmt(total) + '</td><td colspan="2">' + fmt(recs.length) + ' รายการ</td></tr>');
+  /* ลำดับในรายงานเริ่ม 1 ทุกช่วงเวลา (รายงานรายเดือน/สัปดาห์ไม่ขึ้นต้นด้วยเลขลำดับกลางปี) — รายงานรายปีจะตรงกับลำดับในชีต */
+  recs.forEach((r, i) => add('<tr><td class="c">' + (i + 1) + '</td><td>' + fmtDMY(r.date) + '</td><td>' + esc(r.name) + '</td><td>' + esc(S.cfg.showId ? (r.idcard || '-') : maskId(r.idcard)) + '</td><td>' + esc(r.docNo) + '</td><td>' + esc(r.detail) + '</td><td class="r">' + fmt(r.amount) + '</td><td>' + esc(r.pay) + '</td><td>' + esc(r.note) + '</td></tr>'));
+  /* แถวสรุปท้ายตาราง (เงินสด/โอน/ยอดรวม) ต้องอยู่หน้าเดียวกัน และไม่ปล่อยให้อยู่หน้าใหม่ลำพัง — ยกแถวข้อมูลสุดท้ายไปด้วย 1 แถว */
+  const foot = [];
+  const over = () => { const b = $('.rb', pg); return b.scrollHeight > b.clientHeight + 1; };
+  if (recs.length) {
+    foot.push('<tr class="sub"><td colspan="6" class="r">รับชำระด้วยเงินสด ' + fmt(cntOf('เงินสด')) + ' รายการ</td><td class="r">' + fmt(sumOf('เงินสด')) + '</td><td colspan="2"></td></tr>');
+    foot.push('<tr class="sub"><td colspan="6" class="r">รับชำระด้วยเงินโอน ' + fmt(cntOf('โอน')) + ' รายการ</td><td class="r">' + fmt(sumOf('โอน')) + '</td><td colspan="2"></td></tr>');
+    const oth = recs.length - cntOf('เงินสด') - cntOf('โอน');
+    if (oth) foot.push('<tr class="sub"><td colspan="6" class="r">ช่องทางอื่น ' + fmt(oth) + ' รายการ</td><td class="r">' + fmt(total - sumOf('เงินสด') - sumOf('โอน')) + '</td><td colspan="2"></td></tr>');
+  }
+  foot.push('<tr class="tot"><td colspan="6" class="r">ยอดรวมทั้งสิ้น <span class="bt">(' + bahtText(total) + ')</span></td><td class="r">' + fmt(total) + '</td><td colspan="2">' + fmt(recs.length) + ' รายการ</td></tr>');
+  foot.forEach(h => tb.insertAdjacentHTML('beforeend', h));
+  if (over()) {
+    for (let i = 0; i < foot.length; i++) tb.lastElementChild.remove();
+    const carry = recs.length && tb.children.length > 1 ? tb.lastElementChild.outerHTML : '';
+    if (carry) tb.lastElementChild.remove();
+    pg = mk(); tb = $('tbody', pg);
+    tb.insertAdjacentHTML('beforeend', carry + foot.join(''));
+  }
   return pages;
 }
 
@@ -1979,15 +2222,24 @@ function exportXlsx(btn) {
   try {
     const wb = XLSX.utils.book_new(); const ri = repInfoOf(); const keys = S.rep.cat === 'ALL' ? CAT_KEYS : [S.rep.cat];
     keys.forEach(c => {
-      const C = CATS[c]; const all = catRecords(c); const seq = buildSeq(all); const recs = all.filter(r => inRange(r.date, ri.range)).sort(cmpRec);
+      const C = CATS[c]; const all = catRecords(c); const recs = all.filter(r => inRange(r.date, ri.range)).sort(cmpRec);
       const aoa = [[C.title + ' แผนกรักษาความปลอดภัย ' + (ri.period === 'year' ? 'ปี. ' + ri.year : ri.label)], ['ลำดับ', 'วันที่', 'ชื่อ-นามสกุล', 'รหัสบัตรประชาชน', 'No. เอกสารปรับ', 'รายละเอียดการปรับ', 'จำนวนเงิน', 'วิธีชำระเงิน', 'หมายเหตุ']];
-      recs.forEach(r => aoa.push([seq.get(r.id), parseIso(r.date), r.name, S.cfg.showId ? (r.idcard || '-') : maskId(r.idcard), r.docNo, r.detail, r.amount, r.pay, r.note || null]));
-      const last = recs.length + 2; aoa.push([null, null, 'ยอดรวม', null, null, null, null, null, null]);
-      const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
-      for (let i = 3; i <= last; i++) { const cell = ws['B' + i]; if (cell) cell.z = 'dd/mm/yyyy'; }
-      ws['G' + (last + 1)] = { t: 'n', f: recs.length ? 'SUM(G3:G' + last + ')' : '0', v: recs.reduce((s, r) => s + r.amount, 0) };
-      ws['!ref'] = 'A1:I' + (last + 1);
-      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, { s: { r: last, c: 2 }, e: { r: last, c: 5 } }];
+      /* วันที่เขียนเป็นเลขวันที่ของ Excel โดยตรง (นับจาก 30/12/1899 แบบ UTC) — ไม่ผ่าน Date ท้องถิ่น จึงไม่เลื่อนวันตามเขตเวลา */
+      const serial = iso => { const p = iso.split('-'); return (Date.UTC(+p[0], +p[1] - 1, +p[2]) - Date.UTC(1899, 11, 30)) / 86400000; };
+      recs.forEach((r, i) => aoa.push([i + 1, serial(r.date), r.name, S.cfg.showId ? (r.idcard || '-') : maskId(r.idcard), r.docNo, r.detail, r.amount, r.pay, r.note || null]));
+      const last = recs.length + 2; const tot = recs.reduce((s, r) => s + r.amount, 0);
+      aoa.push([null, null, 'ยอดรวม', null, null, null, null, null, null]);
+      aoa.push([null, null, 'เงินสด', null, null, null, null, null, null]);
+      aoa.push([null, null, 'โอน', null, null, null, null, null, null]);
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      for (let i = 3; i <= last; i++) { const cell = ws['B' + i]; if (cell) cell.z = 'dd/mm/yyyy'; if (ws['G' + i]) ws['G' + i].z = '#,##0'; }
+      const rg = 'G3:G' + Math.max(3, last), hg = 'H3:H' + Math.max(3, last);
+      ws['G' + (last + 1)] = { t: 'n', f: recs.length ? 'SUM(' + rg + ')' : '0', v: tot, z: '#,##0' };
+      ws['G' + (last + 2)] = { t: 'n', f: recs.length ? 'SUMIF(' + hg + ',"เงินสด",' + rg + ')' : '0', v: recs.filter(r => r.pay === 'เงินสด').reduce((s, r) => s + r.amount, 0), z: '#,##0' };
+      ws['G' + (last + 3)] = { t: 'n', f: recs.length ? 'SUMIF(' + hg + ',"โอน",' + rg + ')' : '0', v: recs.filter(r => r.pay === 'โอน').reduce((s, r) => s + r.amount, 0), z: '#,##0' };
+      ws['H' + (last + 1)] = { t: 's', v: bahtText(tot) };
+      ws['!ref'] = 'A1:I' + (last + 3);
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, { s: { r: last, c: 2 }, e: { r: last, c: 5 } }, { s: { r: last + 1, c: 2 }, e: { r: last + 1, c: 5 } }, { s: { r: last + 2, c: 2 }, e: { r: last + 2, c: 5 } }, { s: { r: last, c: 7 }, e: { r: last, c: 8 } }];
       ws['!cols'] = [{ wch: 7 }, { wch: 12 }, { wch: 38 }, { wch: 20 }, { wch: 14 }, { wch: 50 }, { wch: 12 }, { wch: 13 }, { wch: 22 }];
       XLSX.utils.book_append_sheet(wb, ws, C.sheet);
     });
@@ -2011,12 +2263,13 @@ function openSettings() {
     desc: 'ข้อมูลอ่านจากไฟล์รายปีในโฟลเดอร์ Google Drive (เพิ่มไฟล์ปีใหม่แล้วระบบเห็นเอง) และแนบไฟล์หลักฐานขึ้น Drive',
     body:
       '<div class="f" style="margin-bottom:12px"><label for="stUrl">Web App URL (Google Apps Script)</label><input type="url" id="stUrl" placeholder="' + esc(CONFIG.GAS_URL) + '" value="' + esc(S.cfg.gasUrl || '') + '"><span class="hint">ปล่อยว่าง = ใช้ URL ที่ฝังไว้ในโค้ด (ได้จาก Deploy → Manage deployments → Web app)</span></div>' +
-      '<div class="f" style="margin-bottom:12px"><label for="stKey">รหัสเข้าถึง (ACCESS_KEY)</label><input type="password" id="stKey" autocomplete="off" placeholder="ถ้ากำหนดไว้ใน Code_Fines_v2.gs" value="' + esc(S.cfg.accessKey || '') + '"></div>' +
+      '<div class="f" style="margin-bottom:12px"><label for="stKey">รหัสเข้าถึง (ACCESS_KEY)</label><input type="password" id="stKey" autocomplete="off" placeholder="ถ้ากำหนดไว้ใน Code_Fines_v3.gs" value="' + esc(S.cfg.accessKey || '') + '"></div>' +
       '<label class="sw"><input type="checkbox" id="stShowId"' + (S.cfg.showId ? ' checked' : '') + '>แสดงเลขบัตรประชาชน/เลขนิติบุคคลแบบเต็ม (ตาราง รายงาน และ Excel)</label>' +
       '<div class="hint" id="stTest" style="margin-top:10px;min-height:22px"></div>' +
       '<div class="sec"><h4>ข้อมูลในระบบ ' + fmt(S.records.length) + ' รายการ</h4>' + (cloud && S.meta ? '<div class="hint" style="margin-top:4px">' + esc(metaText(S.meta)) + '</div>' : '') + '<div class="row" style="justify-content:flex-start;margin-top:6px">' +
       '<button class="btn ghost sm" type="button" id="stBackup">' + icon('down') + 'สำรองข้อมูล (JSON)</button>' +
       (!cloud ? '<button class="btn ghost sm" type="button" id="stReset">รีเซ็ตกลับเป็นข้อมูลตั้งต้น</button>' : '') + '</div></div>' +
+      dqHtml() +
       '<div class="sec"><h4>ติดตั้งเป็นแอป (PWA)</h4><div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn ghost sm" type="button" id="stInstall"' + (deferredInstall ? '' : ' disabled') + '>' + icon('plus') + 'ติดตั้งลงหน้าจอหลัก</button></div>' +
       '<div class="hint" style="margin-top:6px">' + (location.protocol.startsWith('http') ? 'iPhone/iPad: เปิดด้วย Safari → ปุ่มแชร์ → "เพิ่มลงในหน้าจอโฮม" • Android/คอมพิวเตอร์: กดปุ่มด้านบน หรือเมนูเบราว์เซอร์ → ติดตั้งแอป' : 'การติดตั้ง PWA ต้องเปิดผ่านเว็บ https:// (เช่น GitHub Pages หรือโฮสต์ของศูนย์) ไม่ใช่เปิดไฟล์จากเครื่องโดยตรง') + '</div></div>',
     buttons: [
@@ -2027,13 +2280,26 @@ function openSettings() {
         S.cfg.gasUrl = url; S.cfg.accessKey = $('#stKey').value; S.cfg.showId = $('#stShowId').checked; saveCfg(); syncIdBtn();
         toast('ok', 'บันทึกการตั้งค่าแล้ว', isCloud() ? 'กำลังอ่านข้อมูลจาก Google Drive...' : 'ใช้งานโหมดในเครื่อง'); loadAll(); } }
     ],
-    onOpen: ov => {
+    onOpen: (ov, close) => {
       const on = (id, fn) => { const e = $('#' + id, ov); if (e) e.addEventListener('click', fn); };
       on('stBackup', () => { dlBlob(new Blob([JSON.stringify(S.records.map(stripLocal), null, 1)], { type: 'application/json' }), 'SBK_Fines_backup_' + todayIso() + '.json'); toast('ok', 'สำรองข้อมูลแล้ว', S.records.length + ' รายการ'); });
       on('stReset', async () => { if (await confirmBox('รีเซ็ตข้อมูลในเครื่อง?', 'รายการที่เพิ่ม แก้ไข หรือลบในเครื่องนี้จะหายไป และกลับเป็นข้อมูลตั้งต้น ' + SEED.length + ' รายการ', 'รีเซ็ต', 'red')) { try { localStorage.removeItem(CONFIG.STORE_KEY); } catch (e) { /* ignore */ } loadLocal(); refreshAll(); toast('ok', 'รีเซ็ตข้อมูลแล้ว'); } });
+      on('stDq', () => { const box = $('#dqList', ov); if (box) box.hidden = !box.hidden; });
+      $$('#dqList [data-edit]', ov).forEach(b => b.addEventListener('click', () => { const id = b.dataset.edit; close(); startEdit(id); }));
       on('stInstall', async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; });
     }
   });
+}
+const apiVerNum = v => +(String(v || '').replace(/\D/g, '') || 0);
+/* ส่วน "ตรวจคุณภาพข้อมูล" ในหน้าตั้งค่า — ชี้แถวที่ควรแก้ในชีตต้นฉบับ (ระบบไม่แก้ข้อมูลต้นฉบับเอง) */
+function dqHtml() {
+  const list = auditData(S.records); const nErr = list.filter(x => x.level === 'err').length;
+  const fixedNote = S.meta && S.meta.fixedIds ? '<div class="hint" style="margin-top:4px">ระบบเติมเลข 0 หน้าเลขประจำตัวที่หายไปให้อัตโนมัติแล้ว ' + fmt(S.meta.fixedIds) + ' รายการ (ผ่านการตรวจ checksum)</div>' : '';
+  if (!list.length) return '<div class="sec"><h4>ตรวจคุณภาพข้อมูล</h4><div class="hint" style="margin-top:4px;color:var(--ok)">✓ ไม่พบรายการที่ผิดปกติ</div>' + fixedNote + '</div>';
+  const rows = list.slice(0, 80).map(x => '<tr><td><span class="tag c' + x.cat + '">' + x.cat + '</span></td><td>' + fmtDMY(x.date) + '</td><td class="doc">' + esc(x.docNo) + '</td><td style="color:' + (x.level === 'err' ? 'var(--bad,#dc2626)' : 'inherit') + '">' + esc(x.msg) + '</td><td><button type="button" class="btn ghost sm" data-edit="' + esc(x.id) + '">แก้ไข</button></td></tr>').join('');
+  return '<div class="sec"><h4>ตรวจคุณภาพข้อมูล</h4><div class="hint" style="margin-top:4px">พบ ' + fmt(list.length) + ' จุดที่ควรตรวจสอบ' + (nErr ? ' (สำคัญ ' + nErr + ')' : '') + ' — ตัวเลขยอดเงินยังคำนวณครบทุกรายการ แต่ควรแก้ให้ตรงเอกสารจริง</div>' + fixedNote +
+    '<div class="row" style="justify-content:flex-start;margin-top:6px"><button class="btn ghost sm" type="button" id="stDq">แสดง/ซ่อนรายการ</button></div>' +
+    '<div id="dqList" hidden style="max-height:260px;overflow:auto;margin-top:8px"><table class="tbl" style="min-width:0;font-size:13px"><thead><tr><th>หมวด</th><th>วันที่</th><th>เลขที่เอกสาร</th><th>ข้อสังเกต</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' + (list.length > 80 ? '<div class="hint">แสดง 80 รายการแรก</div>' : '') + '</div></div>';
 }
 async function testConn(bt) {
   const out = $('#stTest'); const url = $('#stUrl').value.trim() || CONFIG.GAS_URL; if (!url) { out.className = 'hint warn'; out.textContent = 'กรุณาวาง Web App URL ก่อนทดสอบ'; return; }
@@ -2041,7 +2307,7 @@ async function testConn(bt) {
   try {
     const d = await jsonp({ action: 'ping' });
     if (!d || !d.ok) throw new Error((d && d.error) || 'เซิร์ฟเวอร์ตอบกลับผิดรูปแบบ');
-    out.className = 'hint'; out.style.color = 'var(--ok)'; out.textContent = '✓ เชื่อมต่อสำเร็จ — พบข้อมูล หมวด A ' + d.counts.A + ' • B ' + d.counts.B + ' • C ' + d.counts.C + ' รายการ' + (d.meta && d.meta.files ? ' • ' + metaText(d.meta) : '') + (d.version === 'v2' ? '' : ' • ⚠ สคริปต์ยังเป็นรุ่นเก่า ให้ Deploy เป็น New version');
+    out.className = 'hint'; out.style.color = 'var(--ok)'; out.textContent = '✓ เชื่อมต่อสำเร็จ — พบข้อมูล หมวด A ' + d.counts.A + ' • B ' + d.counts.B + ' • C ' + d.counts.C + ' รายการ' + (d.meta && d.meta.files ? ' • ' + metaText(d.meta) : '') + (apiVerNum(d.version) >= CONFIG.API_VER_MIN ? ' • สคริปต์รุ่น ' + d.version : ' • ⚠ สคริปต์บนเซิร์ฟเวอร์เป็นรุ่น ' + (d.version || 'เก่า') + ' — แนะนำวาง Code_Fines_v3.gs แล้ว Deploy เป็น New version เพื่อให้ยืนยันผลบันทึกได้แม่นยำ');
   } catch (e) { out.className = 'hint bad'; out.style.color = ''; out.textContent = '✗ ' + e.message; }
   finally { S.cfg.gasUrl = prev.u; S.cfg.accessKey = prev.k; setBusy(bt, false); }
 }
